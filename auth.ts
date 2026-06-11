@@ -10,6 +10,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/login",
   },
+  logger: {
+    error(code, ...message) {
+      console.error("AuthError:", code, ...message)
+    },
+  },
   providers: [
     Credentials({
       credentials: {
