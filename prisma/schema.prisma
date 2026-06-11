@@ -1,0 +1,198 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+}
+
+enum ShipmentStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum ShipmentCategory {
+  ELECTRONICA
+  MOBILIARIO
+  ROPA
+  ALIMENTOS
+  MAQUINARIA
+  OTROS
+}
+
+enum TripCostCategory {
+  FUEL
+  TOLL
+  MAINTENANCE
+  PER_DIEM
+  INSURANCE
+  OTHER
+}
+
+enum InvoiceDocType {
+  BOLETA
+  FACTURA
+}
+
+enum InvoiceStatus {
+  EMITIDA
+  COBRADA
+  ANULADA
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String     @unique
+  emailVerified DateTime?
+  image         String?
+  password      String
+  role          Role       @default(OPERATOR)
+  clients       Client[]
+  shipments     Shipment[]
+  invoices      Invoice[]
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Client {
+  id          String     @id @default(cuid())
+  name        String
+  ruc         String?
+  email       String     @unique
+  phone       String
+  address     String
+  shipments   Shipment[]
+  invoices    Invoice[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  createdBy   User       @relation(fields: [createdById], references: [id])
+  createdById String
+}
+
+model Driver {
+  id        String     @id @default(cuid())
+  name      String
+  dni       String?
+  email     String     @unique
+  phone     String
+  license   String
+  shipments Shipment[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Shipment {
+  id               String           @id @default(cuid())
+  trackingNumber   String           @unique
+  category         ShipmentCategory
+  origin           String
+  destination      String
+  weight           Float
+  fee              Float
+  status           ShipmentStatus   @default(PENDING)
+  estimatedArrival DateTime?
+  distance         Float?
+  originLat        Float?
+  originLng        Float?
+  destLat          Float?
+  destLng          Float?
+  client           Client         @relation(fields: [clientId], references: [id])
+  clientId         String
+  driver           Driver?        @relation(fields: [driverId], references: [id])
+  driverId         String?
+  createdBy        User           @relation(fields: [createdById], references: [id])
+  createdById      String
+  detraccionDeposited Boolean  @default(false)
+  costs            TripCost[]
+  invoiceShipments InvoiceShipment[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model Invoice {
+  id          String         @id @default(cuid())
+  docType     InvoiceDocType
+  docNumber   String         @unique
+  clientId    String
+  client      Client         @relation(fields: [clientId], references: [id])
+  issueDate   DateTime       @default(now())
+  subtotal    Float
+  tax         Float
+  total       Float
+  status      InvoiceStatus  @default(EMITIDA)
+  createdById String
+  createdBy   User           @relation(fields: [createdById], references: [id])
+  shipments   InvoiceShipment[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model InvoiceShipment {
+  invoiceId  String
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id])
+
+  @@id([invoiceId, shipmentId])
+}
+
+model TripCost {
+  id          String           @id @default(cuid())
+  shipmentId  String
+  shipment    Shipment         @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  category    TripCostCategory
+  description String
+  amount      Float
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}

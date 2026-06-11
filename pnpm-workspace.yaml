@@ -1,0 +1,13 @@
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  msw: true
+  prisma: true
+  sharp: true
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
+minimumReleaseAgeExclude:
+  - '@prisma/adapter-neon@7.9.0-dev.9'
+  - '@prisma/debug@7.9.0-dev.9'
+  - '@prisma/driver-adapter-utils@7.9.0-dev.9'
